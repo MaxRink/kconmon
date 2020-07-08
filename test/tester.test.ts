@@ -42,7 +42,7 @@ describe('Tester', () => {
 
   it('should do a custom tcp test', async () => {
     config.testConfig.custom_tcp.hosts = ['www.google.com']
-    const result = await sut.runICMPTests()
+    const result = await sut.runCustomTCPTests()
     should(result[0].result).eql('pass')
   })
 
