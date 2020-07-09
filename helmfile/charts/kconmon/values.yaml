@@ -1,5 +1,5 @@
 docker:
-  image: barto92/kubemon
+  image: stono/kconmon
   tag: latest
 
 # Should we run an initContainer that enables core tcp connection setting tweaks
@@ -38,7 +38,8 @@ config:
     hosts:
       - www.google.com
       - kubernetes.default.svc.cluster.local
-  
+
+# ICMP Test configuration
   icmp:
     enable: true
     interval: 5000
@@ -48,6 +49,8 @@ config:
       - www.telekom.de
       - www.google.com
       - 8.8.4.4
+
+# Custom TCP tests configuration
   custom_tcp:
     enable: true
     interval: 5000
