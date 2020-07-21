@@ -29,8 +29,7 @@ export default class Metrics implements IMetrics {
 
   private ICMP: client.Counter<string>
   private ICMPDuration: client.Gauge<string>
-  private ICMPAverage: client.Gauge<string>
-  private ICMPStddv: client.Gauge<string>
+  private ICMPRtt: client.Gauge<string>
   private ICMPLoss: client.Gauge<string>
 
   private CustomTCP: client.Counter<string>
@@ -93,16 +92,10 @@ export default class Metrics implements IMetrics {
       name: `${config.metricsPrefix}_icmp_duration_milliseconds`
     })
 
-    this.ICMPAverage = new client.Gauge<string>({
-      help: 'ICMP average packet RTT',
+    this.ICMPRtt = new client.Gauge<string>({
+      help: 'ICMP round-trip time',
       labelNames: ['source', 'destination', 'host'],
-      name: `${config.metricsPrefix}_icmp_average_rtt_milliseconds`
-    })
-
-    this.ICMPStddv = new client.Gauge<string>({
-      help: 'ICMP standard deviation of RTT',
-      labelNames: ['source', 'destination', 'host'],
-      name: `${config.metricsPrefix}_icmp_standard_deviation_rtt_milliseconds`
+      name: `${config.metricsPrefix}_icmp_rtt_milliseconds`
     })
 
     this.ICMPLoss = new client.Gauge<string>({
@@ -172,17 +165,11 @@ export default class Metrics implements IMetrics {
       result.host
     ).set(result.duration)
 
-    this.ICMPAverage.labels(
+    this.ICMPRtt.labels(
       result.source.nodeName,
       result.source.zone,
       result.host
-    ).set(result.avg)
-    
-    this.ICMPStddv.labels(
-      result.source.nodeName,
-      result.source.zone,
-      result.host
-    ).set(result.stddev)
+    ).set(result.rtt)
 
     this.ICMPLoss.labels(
       result.source.nodeName,

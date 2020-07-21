@@ -37,7 +37,7 @@ describe('Tester', () => {
   })
 
   it('should do a icmp test', async () => {
-    config.testConfig.icmp.hosts = ['www.google.com']
+    config.testConfig.icmp.hosts = ['8.8.8.8']
     const result = await sut.runICMPTests()
     should(result[0].result).eql('pass')
   })

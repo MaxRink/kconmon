@@ -63,10 +63,29 @@ spec:
           sysctl -w net.ipv4.tcp_timestamps=0
           sysctl -w net.ipv4.tcp_sack=0
           sysctl -w net.ipv4.tcp_fack=0
+          setcap cap_net_admin,cap_net_raw,cap_net_bind_service=+eip /usr/bin/node
+          getcap /usr/bin/node
         imagePullPolicy: IfNotPresent
         image: "{{ required "Please specify the docker image" .Values.docker.image }}:{{ .Values.docker.tag | default .Chart.Version }}"
         securityContext:
           privileged: true
+          runAsUser: 0
+{{ end }}
+
+{{ if $.Values.setCapNode }}
+      initContainers:
+      - name: setcap
+        command:
+        - /bin/sh
+        - -c
+        - |
+          # Setcap to node to allow usage of raw_socket
+          setcap cap_net_admin,cap_net_raw,cap_net_bind_service=+eip /usr/bin/node
+          getcap /usr/bin/node
+        imagePullPolicy: IfNotPresent
+        image: "{{ required "Please specify the docker image" .Values.docker.image }}:{{ .Values.docker.tag | default .Chart.Version }}"
+        securityContext:
+          privileged: false
           runAsUser: 0
 {{ end }}
 
