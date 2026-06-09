@@ -101,19 +101,19 @@ export default class Metrics implements IMetrics {
 
     this.ICMPAverage = new client.Gauge<string>({
       help: 'ICMP average packet RTT',
-      labelNames: ['source', 'destination', 'host'],
+      labelNames: ['source', 'source_zone', 'host'],
       name: `${config.metricsPrefix}_icmp_average_rtt_milliseconds`
     })
 
     this.ICMPStddv = new client.Gauge<string>({
       help: 'ICMP standard deviation of RTT',
-      labelNames: ['source', 'destination', 'host'],
+      labelNames: ['source', 'source_zone', 'host'],
       name: `${config.metricsPrefix}_icmp_standard_deviation_rtt_milliseconds`
     })
 
     this.ICMPLoss = new client.Gauge<string>({
       help: 'ICMP packet loss',
-      labelNames: ['source', 'destination', 'host'],
+      labelNames: ['source', 'source_zone', 'host'],
       name: `${config.metricsPrefix}_icmp_packet_loss`
     })
 
