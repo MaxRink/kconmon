@@ -66,7 +66,6 @@ export default class Tester implements ITester {
   private running = false
   private config: IConfig
   private resolver = new dns.promises.Resolver()
-  // private ping: pingman
   private readonly udpClientFactory: IUDPClientFactory
 
   constructor(

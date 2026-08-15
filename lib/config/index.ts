@@ -74,8 +74,15 @@ export class Config implements IConfig {
     tcp: getEnv('tcp', { interval: 5000, timeout: 1000 }),
     udp: getEnv('udp', { interval: 5000, timeout: 250, packets: 10 }),
     dns: getEnv('dns', { interval: 5000, hosts: [] }),
-    icmp: getEnv('icmp', { interval: 5000, hosts: [] }),
+    icmp: getEnv('icmp', {
+      enable: false,
+      interval: 5000,
+      count: 2,
+      timeout: 5,
+      hosts: []
+    }),
     custom_http: getEnv('custom_http', {
+      enable: false,
       interval: 5000,
       timeout: 1000,
       hosts: []
