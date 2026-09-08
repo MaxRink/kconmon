@@ -1,5 +1,6 @@
 ARG NODEJS_VERSION
 FROM mhart/alpine-node:${NODEJS_VERSION} as build
+RUN apk add --no-cache python3 make g++
 WORKDIR /app
 
 COPY package.json ./
@@ -10,6 +11,7 @@ RUN ./node_modules/.bin/grunt test
 RUN ./node_modules/.bin/grunt build
 
 FROM mhart/alpine-node:${NODEJS_VERSION} as deploy
+RUN apk add --no-cache python3 make g++
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 ENTRYPOINT [ "/usr/local/bin/entrypoint.sh" ]
 
@@ -17,9 +19,6 @@ WORKDIR /app
 RUN addgroup nonroot && \
     adduser -D nonroot -G nonroot && \
     chown nonroot:nonroot /app
-
-RUN apk update && \
-    apk add --no-cache iputils
 
 USER nonroot
 

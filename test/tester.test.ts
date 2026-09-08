@@ -7,6 +7,8 @@ import * as should from 'should'
 import { Got } from 'got/dist/source'
 import { IUdpClientFactory } from 'lib/udp/clientFactory'
 import { IUDPClient, IUDPPingResult } from 'lib/udp/client'
+import * as ping from 'net-ping'
+import * as dns from 'dns'
 
 describe('Tester', () => {
   let sut: ITester
@@ -36,10 +38,55 @@ describe('Tester', () => {
     sut = new Tester(config, got, discovery, metrics, me, udpClientFactory)
   })
 
+  afterEach(() => {
+    td.reset()
+  })
+
   it('should do a icmp test', async () => {
     config.testConfig.icmp.hosts = ['www.google.com']
+    const session = td.object<any>()
+    td.replace(dns.promises, 'lookup')
+    td.when(dns.promises.lookup('www.google.com')).thenResolve({
+      address: '127.0.0.1',
+      family: 4
+    })
+    td.replace(ping, 'createSession')
+    td.when(ping.createSession(td.matchers.isA(Object))).thenReturn(session)
+    td.when(session.pingHost('127.0.0.1', td.callback)).thenCallback(
+      null,
+      'www.google.com',
+      0,
+      1
+    )
     const result = await sut.runICMPTests()
     should(result[0].result).eql('pass')
+    should(result[0].avg).eql(1)
+  })
+
+  it('should report mixed ICMP probe results', async () => {
+    config.testConfig.icmp.hosts = ['mixed.example']
+    config.testConfig.icmp.count = 3
+    const session = td.object<any>()
+    td.replace(dns.promises, 'lookup')
+    td.when(dns.promises.lookup('mixed.example')).thenResolve({
+      address: '2001:db8::1',
+      family: 6
+    })
+    td.replace(ping, 'createSession')
+    td.when(ping.createSession(td.matchers.isA(Object))).thenReturn(session)
+    let probe = 0
+    td.when(session.pingHost('2001:db8::1', td.callback)).thenDo(
+      (_target, callback) => {
+        probe++
+        callback(probe === 2 ? new Error('timeout') : null, '2001:db8::1', 0, 2)
+      }
+    )
+
+    const result = await sut.runICMPTests()
+    should(result[0].result).eql('pass')
+    should(result[0].avg).eql(2)
+    should(result[0].stddev).eql(0)
+    should(result[0].loss).eql(33.33333333333333)
   })
 
   it('should do a custom http test', async () => {

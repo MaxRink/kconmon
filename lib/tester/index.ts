@@ -7,7 +7,7 @@ import { IConfig } from 'lib/config'
 import Logger, { ILogger } from 'lib/logger'
 import * as dns from 'dns'
 import { IUdpClientFactory as IUDPClientFactory } from 'lib/udp/clientFactory'
-import * as ping from 'ping'
+import * as ping from 'net-ping'
 
 export interface ITester {
   start()
@@ -157,10 +157,52 @@ export default class Tester implements ITester {
       async (host): Promise<IICMPTestResult> => {
         const hrstart = process.hrtime()
         try {
-          const result = await ping.promise.probe(host, {
-            timeout: this.config.testConfig.icmp.timeout,
-            extra: ['-c', this.config.testConfig.icmp.count]
-          })
+          const count = Math.max(1, this.config.testConfig.icmp.count)
+          const address = await dns.promises.lookup(host)
+          let session: any
+          let probes: Array<number | undefined> = []
+          try {
+            session = ping.createSession({
+              networkProtocol:
+                address.family === 6
+                  ? ping.NetworkProtocol.IPv6
+                  : ping.NetworkProtocol.IPv4,
+              timeout: this.config.testConfig.icmp.timeout * 1000,
+              retries: 0
+            })
+            probes = await Promise.all(
+              Array.from({ length: count }, () =>
+                new Promise<number | undefined>((resolve) => {
+                  session.pingHost(
+                    address.address,
+                    (error, _target, sent, received) => {
+                      resolve(error ? undefined : received - sent)
+                    }
+                  )
+                })
+              )
+            )
+          } finally {
+            if (session) {
+              session.close()
+            }
+          }
+          const rtts = probes.filter((rtt): rtt is number => rtt !== undefined)
+          const avg = rtts.length
+            ? rtts.reduce((total, rtt) => total + rtt, 0) / rtts.length
+            : 0
+          const stddev = rtts.length
+            ? Math.sqrt(
+                rtts.reduce((total, rtt) => total + (rtt - avg) ** 2, 0) /
+                  rtts.length
+              )
+            : 0
+          const result = {
+            avg,
+            stddev,
+            loss: ((count - rtts.length) / count) * 100,
+            alive: rtts.length > 0
+          }
           const hrend = process.hrtime(hrstart)
 
           if (result.alive) {
@@ -168,9 +210,9 @@ export default class Tester implements ITester {
               source: this.me,
               host,
               duration: hrend[1] / 1000000,
-              avg: parseFloat(result.avg),
-              stddev: parseFloat(result.stddev),
-              loss: parseFloat(result.packetLoss),
+              avg: result.avg,
+              stddev: result.stddev,
+              loss: result.loss,
               result: 'pass'
             }
             this.metrics.handleICMPTestResult(mapped)
@@ -182,7 +224,7 @@ export default class Tester implements ITester {
               duration: hrend[1] / 1000000,
               avg: 0,
               stddev: 0,
-              loss: parseFloat(result.packetLoss),
+              loss: 100,
               result: 'fail'
             }
             this.metrics.handleICMPTestResult(mapped)

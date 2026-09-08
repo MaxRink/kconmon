@@ -72,6 +72,12 @@ spec:
       - name: agent
         image: "{{ required "Please specify the docker image" .Values.docker.image }}:{{ .Values.docker.tag | default .Chart.Version }}"
         imagePullPolicy: IfNotPresent
+{{ if $.Values.config.icmp.enable }}
+        securityContext:
+          capabilities:
+            add:
+            - NET_RAW
+{{ end }}
         args:
         - agent
         env:
